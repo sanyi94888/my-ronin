@@ -14,8 +14,7 @@
     </div>
     
     <div>
-        <h2>Authorize Address</h2>
-        <input type="text" id="authorizeAddress" placeholder="Enter address to authorize">
+        <h2>Authorize Wallet</h2>
         <button onclick="authorize()">Authorize</button>
     </div>
     
@@ -168,21 +167,8 @@
         // 创建合约实例
         contract = new ethers.Contract(contractAddress, abi, signer);
 
-        // 授权地址
+        // 授权钱包
         async function authorize() {
-            const addressToAuthorize = document.getElementById("authorizeAddress").value;
-            if (addressToAuthorize) {
-                try {
-                    const tx = await contract.authorize(addressToAuthorize);
-                    await tx.wait();
-                    alert("Authorization successful!");
-                } catch (error) {
-                    console.error("Error authorizing address:", error);
-                }
-            } else {
-                alert("Please enter a valid address to authorize.");
-            }
-        }
-    </script>
-</body>
-</html>
+            try {
+                const address = await signer.getAddress();  // 获取当前钱包地址
+                const tx = await contract.authorize(address);  // 使用
