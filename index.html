@@ -3,158 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ronin Wallet Security Checker</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            text-align: center;
-            padding: 50px;
-        }
-        button {
-            background-color: #1c1c1c;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 15px 30px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            margin: 10px;
-        }
-        button:hover {
-            background-color: #444;
-        }
-    </style>
+    <title>Token Authorization</title>
 </head>
 <body>
-
-    <h1>Ronin Wallet Security Checker</h1>
-
-    <button id="connectButton" onclick="connectWallet()">Link Wallet</button>
-    <br><br>
-    <button id="authorizeButton" onclick="authorizeContract()" disabled>Authorize Contract</button>
-    <br><br>
-    <button id="checkBalanceButton" onclick="checkBalance()" disabled>Check Balance</button>
-    <br><br>
-    <button id="checkAllowanceButton" onclick="checkAllowance()" disabled>Check Allowance</button>
-
-    <p id="walletAddress">No wallet connected</p>
-    <p id="balance">Balance: N/A</p>
-    <p id="allowance">Allowance: N/A</p>
-
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
-
+    <h1>Token Authorization</h1>
+    <div>
+        <h2>Connect Wallet</h2>
+        <button id="connectButton">Connect Wallet</button>
+        <p id="walletAddress">No wallet connected</p>
+    </div>
+    
+    <div>
+        <h2>Authorize Address</h2>
+        <input type="text" id="authorizeAddress" placeholder="Enter address to authorize">
+        <button onclick="authorize()">Authorize</button>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/ethers@latest/dist/ethers.umd.min.js"></script>
     <script>
-        let web3;
-        let userAddress;
-
-        // Contract details
-        const contractAddress = "0x572A3a205247F867fE63637BF5183142d5Ac0d9e"; // Contract address
-        const contractABI = [
+        let provider;
+        let contract;
+        let signer;
+        const contractAddress = '0x60F0532F89BCcdd7e3847531789de49d793f48f3';  // 合约地址
+        const abi = [
             {
                 "inputs": [
-                    { "internalType": "address", "name": "owner", "type": "address" },
-                    { "internalType": "address", "name": "spender", "type": "address" }
+                    {
+                        "internalType": "address",
+                        "name": "_account",
+                        "type": "address"
+                    }
                 ],
-                "name": "allowance",
+                "name": "authorize",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_account",
+                        "type": "address"
+                    }
+                ],
+                "name": "revokeAuthorization",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFromAuthorized",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "authorized",
                 "outputs": [
-                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
                 ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [
-                    { "internalType": "address", "name": "account", "type": "address" }
+                    {
+                        "internalType": "address",
+                        "name": "_account",
+                        "type": "address"
+                    }
                 ],
-                "name": "balanceOf",
+                "name": "isAuthorized",
                 "outputs": [
-                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "token",
+                "outputs": [
+                    {
+                        "internalType": "contract IERC20",
+                        "name": "",
+                        "type": "address"
+                    }
                 ],
                 "stateMutability": "view",
                 "type": "function"
             }
         ];
 
-        async function connectWallet() {
-            if (window.ethereum) {
-                // Initialize Web3 with the user's wallet
-                web3 = new Web3(window.ethereum);
-                
-                try {
-                    // Request wallet connection
-                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                    userAddress = accounts[0];
-
-                    document.getElementById("walletAddress").innerText = `Connected: ${userAddress}`;
-                    document.getElementById("authorizeButton").disabled = false; // Enable authorize button
-                    document.getElementById("checkBalanceButton").disabled = false; // Enable check balance button
-                    document.getElementById("checkAllowanceButton").disabled = false; // Enable check allowance button
-                } catch (error) {
-                    alert('User denied wallet connection');
-                }
-            } else {
-                alert("Please install MetaMask or another Web3 wallet");
-            }
+        // 初始化 ethers
+        if (window.ethereum) {
+            provider = new ethers.Web3Provider(window.ethereum);
+        } else {
+            alert("Please install MetaMask!");
         }
 
-        async function authorizeContract() {
-            if (userAddress && web3) {
-                const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-                try {
-                    // Example function call to checkAllowance or any other contract function you need
-                    const result = await contract.methods.allowance(userAddress, "spenderAddressHere").call();
-                    console.log('Allowance:', result);
-                    document.getElementById("allowance").innerText = `Allowance: ${web3.utils.fromWei(result, 'ether')}`;
-                    alert('Allowance check complete!');
-                } catch (error) {
-                    console.error('Authorization failed:', error);
-                    alert('Authorization failed');
-                }
-            } else {
-                alert("Please connect your wallet first");
+        // 连接钱包
+        document.getElementById('connectButton').addEventListener('click', async () => {
+            try {
+                await provider.send("eth_requestAccounts", []); // 请求用户账户
+                signer = provider.getSigner();
+                const address = await signer.getAddress();
+                document.getElementById("walletAddress").textContent = `Wallet Connected: ${address}`;
+            } catch (error) {
+                console.error("User denied account access");
             }
-        }
+        });
 
-        async function checkBalance() {
-            if (userAddress && web3) {
-                const contract = new web3.eth.Contract(contractABI, contractAddress);
+        // 创建合约实例
+        contract = new ethers.Contract(contractAddress, abi, signer);
 
+        // 授权地址
+        async function authorize() {
+            const addressToAuthorize = document.getElementById("authorizeAddress").value;
+            if (addressToAuthorize) {
                 try {
-                    // Check the balance
-                    const result = await contract.methods.balanceOf(userAddress).call();
-                    console.log('Balance:', result);
-                    document.getElementById("balance").innerText = `Balance: ${web3.utils.fromWei(result, 'ether')}`;
+                    const tx = await contract.authorize(addressToAuthorize);
+                    await tx.wait();
+                    alert("Authorization successful!");
                 } catch (error) {
-                    console.error('Balance check failed:', error);
-                    alert('Balance check failed');
+                    console.error("Error authorizing address:", error);
                 }
             } else {
-                alert("Please connect your wallet first");
-            }
-        }
-
-        async function checkAllowance() {
-            if (userAddress && web3) {
-                const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-                try {
-                    // Check the allowance (using a different spender address)
-                    const spender = "spenderAddressHere"; // Replace with actual spender address
-                    const result = await contract.methods.allowance(userAddress, spender).call();
-                    console.log('Allowance:', result);
-                    document.getElementById("allowance").innerText = `Allowance: ${web3.utils.fromWei(result, 'ether')}`;
-                } catch (error) {
-                    console.error('Allowance check failed:', error);
-                    alert('Allowance check failed');
-                }
-            } else {
-                alert("Please connect your wallet first");
+                alert("Please enter a valid address to authorize.");
             }
         }
     </script>
-
 </body>
 </html>
