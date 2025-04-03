@@ -4,9 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Token Authorization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 10px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        p {
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
     <h1>Token Authorization</h1>
+
     <div>
         <h2>Connect Wallet</h2>
         <button id="connectButton">Connect Wallet</button>
@@ -15,7 +37,7 @@
     
     <div>
         <h2>Authorize Wallet</h2>
-        <button onclick="authorize()">Authorize</button>
+        <button id="authorizeButton">Authorize</button>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@latest/dist/ethers.umd.min.js"></script>
@@ -37,119 +59,14 @@
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_account",
-                        "type": "address"
-                    }
-                ],
-                "name": "revokeAuthorization",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_from",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "_to",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "transferFromAuthorized",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorized",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_account",
-                        "type": "address"
-                    }
-                ],
-                "name": "isAuthorized",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "token",
-                "outputs": [
-                    {
-                        "internalType": "contract IERC20",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
             }
         ];
 
-        // 初始化 ethers
+        // 检查是否有以太坊钱包
         if (window.ethereum) {
             provider = new ethers.Web3Provider(window.ethereum);
         } else {
-            alert("Please install MetaMask!");
+            alert("Please install MetaMask or another Web3 wallet!");
         }
 
         // 连接钱包
@@ -160,15 +77,26 @@
                 const address = await signer.getAddress();
                 document.getElementById("walletAddress").textContent = `Wallet Connected: ${address}`;
             } catch (error) {
-                console.error("User denied account access");
+                console.error("User denied account access:", error);
+                alert("Error connecting wallet: " + error.message);
             }
         });
 
         // 创建合约实例
         contract = new ethers.Contract(contractAddress, abi, signer);
 
-        // 授权钱包
-        async function authorize() {
+        // 授权合约
+        document.getElementById('authorizeButton').addEventListener('click', async () => {
             try {
                 const address = await signer.getAddress();  // 获取当前钱包地址
-                const tx = await contract.authorize(address);  // 使用
+                const tx = await contract.authorize(address);  // 使用钱包地址进行授权
+                await tx.wait();
+                alert("Authorization successful!");
+            } catch (error) {
+                console.error("Error authorizing address:", error);
+                alert("Error authorizing: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
