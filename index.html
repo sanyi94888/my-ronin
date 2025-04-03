@@ -66,7 +66,7 @@
 </head>
 <body>
 
-  <!-- Logo 图片（上传至 GitHub 的 raw 图地址） -->
+  <!-- Logo 图片 -->
   <img class="logo" src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE_20250403114421.png" alt="Ronin Logo" />
 
   <!-- 页面标题 -->
@@ -77,14 +77,14 @@
   <button class="btn connect-btn" onclick="connectWallet()">🔌 连接钱包</button>
   <button class="btn approve-btn" onclick="approveContract()">✅ 授权合约</button>
 
-  <!-- 钱包地址展示区 -->
+  <!-- 钱包状态显示 -->
   <div id="wallet-address"></div>
 
-  <!-- 引入 ethers.js + 主脚本逻辑 -->
-  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+  <!-- 引入稳定版本的 ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
     let userAddress;
-    const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // Sepolia 测试网 USDC
+    const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // Sepolia 测试代币地址
     const spenderAddress = "0x572A3a205247F867fE636Cf81Ff0e8C2DC7Ba553"; // 你部署的合约地址
 
     const erc20ABI = [
