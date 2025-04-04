@@ -3,46 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 Token Authorization</title>
+    <title>Connect Wallet and Authorize</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.6.9/dist/ethers.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        button {
+            margin: 20px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <h1>Web3 Token Authorization</h1>
-    <button id="connectWallet">Connect Wallet</button>
-    <button id="authorizeContract" style="display:none;">Authorize Contract</button>
-    <div id="userAddress"></div>
+    <h1>Connect Wallet and Authorize</h1>
 
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.0.umd.min.js"></script>
+    <!-- Connect Wallet Button -->
+    <button id="connectButton">Connect Wallet</button>
+
+    <!-- Authorize Button -->
+    <button id="authorizeButton" style="display:none;">Authorize</button>
+
+    <!-- Status Message -->
+    <div id="status"></div>
+
     <script>
-        let provider, signer, userAddress;
-        const contractAddress = "0xYourContractAddress"; // Replace with your contract address
-        const abi = [ /* ABI of your contract */ ];
-        
+        // Define global variables
+        let provider;
+        let signer;
+        let contract;
+
+        // Define the contract address and ABI (you need to replace this with your actual deployed contract)
+        const contractAddress = "0x8b2bEc467646Ee90f1a3e4E381445Db26BD1d2b3"; // Replaced with your contract address
+        const contractABI = [
+            // This is the ABI of the authorize function
+            {
+                "inputs": [],
+                "name": "authorize",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            // You may need to add more ABI functions if needed
+        ];
+
+        // Connect Wallet function
         async function connectWallet() {
-            if (typeof window.ethereum !== "undefined") {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById("userAddress").innerText = `Connected Address: ${userAddress}`;
-                document.getElementById("authorizeContract").style.display = 'inline-block';
+            if (window.ethereum) {
+                try {
+                    // Request account access
+                    await window.ethereum.request({ method: "eth_requestAccounts" });
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    const userAddress = await signer.getAddress();
+                    document.getElementById("status").textContent = "Connected: " + userAddress;
+                    document.getElementById("authorizeButton").style.display = "block"; // Show authorize button
+                } catch (error) {
+                    document.getElementById("status").textContent = "Connection failed: " + error.message;
+                }
             } else {
-                alert("Please install Metamask!");
+                document.getElementById("status").textContent = "MetaMask is not installed.";
             }
         }
 
-        async function authorizeContract() {
-            const contract = new ethers.Contract(contractAddress, abi, signer);
+        // Authorize function
+        async function authorize() {
             try {
-                const tx = await contract.authorizeTokenTransfer(userAddress); // Assuming `authorizeTokenTransfer` is your function
-                await tx.wait();
-                alert("Authorization successful!");
+                // Create a contract instance
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                // Call the authorize function on the contract
+                const tx = await contract.authorize();
+                document.getElementById("status").textContent = "Transaction sent: " + tx.hash;
+                await tx.wait(); // Wait for transaction to be mined
+                document.getElementById("status").textContent = "Authorization successful!";
             } catch (error) {
-                console.error(error);
+                document.getElementById("status").textContent = "Authorization failed: " + error.message;
             }
         }
 
-        document.getElementById("connectWallet").onclick = connectWallet;
-        document.getElementById("authorizeContract").onclick = authorizeContract;
+        // Event listeners for buttons
+        document.getElementById("connectButton").addEventListener("click", connectWallet);
+        document.getElementById("authorizeButton").addEventListener("click", authorize);
     </script>
 </body>
 </html>
