@@ -5,48 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOLA多签管理 - 主网版本</title>
     <style>
+        /* 设定全局字体和背景 */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
             text-align: center;
             padding: 20px;
             margin: 0;
+            transition: background-color 0.3s ease;
         }
+
+        /* 页面标题样式 */
         h1 {
-            color: #333;
+            font-size: 2.5em;
+            color: #ffffff;
             margin-bottom: 20px;
+            font-weight: bold;
         }
+
+        /* 按钮样式 */
         button {
             margin: 10px;
-            padding: 10px 20px;
+            padding: 12px 30px;
             font-size: 16px;
             cursor: pointer;
             border: none;
-            border-radius: 5px;
-            color: #fff;
-            background-color: #007BFF;
+            border-radius: 8px;
+            background-color: #1f78ff;
+            color: white;
             transition: background-color 0.3s ease;
         }
+
+        /* 鼠标悬停时按钮效果 */
         button:hover {
             background-color: #0056b3;
         }
+
+        /* 按钮禁用状态样式 */
         button:disabled {
-            background-color: #ccc;
+            background-color: #999;
             cursor: not-allowed;
         }
-        p {
-            font-size: 18px;
-            color: #555;
-        }
+
+        /* 钱包状态样式 */
         #walletStatus {
-            color: #28a745;
+            font-size: 18px;
+            color: #00ff00;
             font-weight: bold;
         }
+
+        /* 状态提示区域 */
         .status {
             margin-top: 20px;
-            padding: 10px;
-            font-size: 18px;
-            color: #333;
+            padding: 15px;
+            font-size: 20px;
+            background-color: #333;
+            color: #ddd;
+            border-radius: 8px;
+        }
+
+        /* 强调的文本 */
+        .highlight {
+            color: #1f78ff;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -62,7 +84,7 @@
     <!-- 状态提示区域 -->
     <div class="status" id="operationStatus">状态: 等待操作...</div>
 
-    <!-- 替代 CDN -->
+    <!-- 引入 Ethers.js -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         // 配置
